@@ -1,0 +1,142 @@
+import React, { useEffect, useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
+
+import home_icon from '../assets/home_logo.png';
+import search_icon from '../assets/search_icon.svg';
+import cart_icon from '../assets/cart_icon.svg';
+import menu_icon from '../assets/menu_icon.svg';
+import profile_icon from '../assets/profile_icon.png';
+import toast from 'react-hot-toast';
+
+const Navbar = () => {
+  const [open, setOpen] = useState(false);
+  const { 
+    user, setUser, setShowUserLogin, navigate, searchQuery, setSearchQuery, 
+    getCartCount, axios 
+  } = useAppContext();
+
+  const logout = async () => {
+    try {
+      const { data } = await axios.get('/api/user/logout');
+      if (data.success) {
+        toast.success(data.message);
+        setUser(null);
+        navigate('/');
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (searchQuery.length > 0) {
+      navigate('/products');
+    } else {
+      navigate('/');
+    }
+  }, [searchQuery]);
+
+  return (
+    <nav className="flex items-center justify-between px-6 md:px-16 lg:px-20 xl:px-32 py-4 border-b border-gray-300 bg-white relative transition-all">
+
+      {/* Logo */}
+      <NavLink onClick={() => setOpen(false)} to="/" className="flex items-center gap-2">
+        <img className="h-15" src={home_icon} alt="Logo" />
+      </NavLink>
+
+      {/* Desktop Menu */}
+      <div className="hidden sm:flex items-center gap-8">
+        <NavLink to="/">Home</NavLink>
+        <NavLink to="/products">Products</NavLink>
+        <NavLink to="/contact">Contact</NavLink>
+
+        {user && <NavLink to="/my-orders">My Orders</NavLink>}
+
+        {/* Search */}
+        <div className="hidden lg:flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full">
+          <input 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+            className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500" 
+            type="text" 
+            placeholder="Search products" 
+          />
+          <img src={search_icon} alt="Search" className="w-4 h-4"/>
+        </div>
+
+        {/* Cart */}
+        <div onClick={() => navigate("/cart")} className="relative cursor-pointer">
+          <img src={cart_icon} alt="Cart" className="w-6 opacity-80"/>
+          <button className="absolute -top-2 -right-3 text-xs text-white bg-primary w-[18px] h-[18px] rounded-full">
+            {getCartCount()}
+          </button>
+        </div>
+
+        {/* Profile / Login */}
+        {user ? (
+          <div className="relative group">
+            <img src={profile_icon} alt="Profile" className="w-10"/>
+            <ul className="hidden group-hover:block absolute top-10 right-0 bg-white shadow border border-gray-200 py-2.5 w-30 rounded-md text-sm z-40">
+              <li onClick={() => navigate("/profile")} className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer">
+                My Profile
+              </li>
+              <li onClick={logout} className="p-1.5 pl-3 hover:bg-primary-dull cursor-pointer">
+                Logout
+              </li>
+            </ul>
+          </div>
+        ) : (
+          <button 
+            onClick={() => { setShowUserLogin(true); setOpen(false); }} 
+            className="cursor-pointer px-8 py-2 bg-primary hover:bg-primary-dull transition text-white rounded-full"
+          >
+            Login
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Menu Toggle */}
+      <div className="flex items-center gap-6 sm:hidden">
+        <div onClick={() => navigate("/cart")} className="relative cursor-pointer">
+          <img src={cart_icon} alt="Cart" className="w-6 opacity-80"/>
+          <button className="absolute -top-2 -right-3 text-xs text-white bg-primary w-[18px] h-[18px] rounded-full">
+            {getCartCount()}
+          </button>
+        </div>
+        <button onClick={() => setOpen(!open)} aria-label="Menu" className="sm:hidden">
+          <img src={menu_icon} alt="Menu" className="w-6 h-6"/>
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      {open && (
+        <div className="absolute top-[60px] left-0 w-full bg-white shadow-md py-4 flex flex-col items-start gap-2 px-5 text-sm md:hidden">
+          <NavLink to="/" onClick={() => setOpen(false)}>Home</NavLink>
+          <NavLink to="/products" onClick={() => setOpen(false)}>Products</NavLink>
+          <NavLink to="/contact" onClick={() => setOpen(false)}>Contact</NavLink>
+          {user && <NavLink to="/my-orders" onClick={() => setOpen(false)}>My Orders</NavLink>}
+
+          {user ? (
+            <button 
+              onClick={logout} 
+              className="cursor-pointer px-8 py-2 bg-primary hover:bg-primary transition text-white rounded-full"
+            >
+              Logout
+            </button>
+          ) : (
+            <button 
+              onClick={() => { setShowUserLogin(true); setOpen(false); }} 
+              className="cursor-pointer px-8 py-2 bg-primary hover:bg-primary transition text-white rounded-full"
+            >
+              Login
+            </button>
+          )}
+        </div>
+      )}
+    </nav>
+  );
+};
+
+export default Navbar;
